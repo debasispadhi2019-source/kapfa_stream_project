@@ -1,0 +1,19 @@
+{
+	"name": "AZ_KAFKA_FUNCTION",
+	"properties": {
+		"annotations": [],
+		"type": "AzureFunction",
+		"typeProperties": {
+			"functionAppUrl": "https://publishtokafka-xxxx.centralindia-01.azurewebsites.net/api/PublishToKafka",
+			"authentication": "Anonymous",
+			"functionKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "KAFKA_KEY",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "PublishToKafka-Key"
+			}
+		}
+	}
+}
