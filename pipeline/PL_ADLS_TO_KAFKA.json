@@ -92,6 +92,12 @@
 									"dependencyConditions": [
 										"Succeeded"
 									]
+								},
+								{
+									"activity": "get_function_key",
+									"dependencyConditions": [
+										"Succeeded"
+									]
 								}
 							],
 							"policy": {
@@ -108,7 +114,7 @@
 									"content-type": "application/json"
 								},
 								"url": {
-									"value": "@concat(\n    pipeline().parameters.p_function_base_url,\n    '?code=',\n    pipeline().parameters.p_function_key\n)",
+									"value": "@concat(\n    pipeline().parameters.p_function_base_url,\n    '?code=',\n    activity('get_function_key').output.value\n)",
 									"type": "Expression"
 								},
 								"body": {
@@ -117,6 +123,23 @@
 									"fileName": "@{item().name}",
 									"topic": "@{replace(item().name,'.csv','_topic')}"
 								}
+							}
+						},
+						{
+							"name": "get_function_key",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "GET",
+								"url": "https://KV-Demo31aug.vault.azure.net/secrets/p1?api-version=7.5"
 							}
 						}
 					]
