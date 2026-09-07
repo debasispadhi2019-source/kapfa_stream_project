@@ -1,0 +1,253 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name"
+		},
+		"KAFKA_LS_ADLS_RAW": {
+			"type": "string"
+		},
+		"LS_SQL_CONFIG": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_ADLS_TO_KAFKA')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "KAFKA_GM_SRC",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "KAFKA_RAW_FOLDER",
+								"type": "DatasetReference",
+								"parameters": {
+									"p_container": "raw",
+									"p_folder": "DATABASE_A"
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "KAFKA_FE_FILES",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "KAFKA_GM_SRC",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('KAFKA_GM_SRC').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "LK_GET_KAFKA_CONFIG1",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT file_name, kafka_topic\nFROM dbo.kafka_file_config\nWHERE active_flag = 'Y'\nAND file_name = '@{item().name}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"isolationLevel": "ReadCommitted",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_SQL_CONFIG",
+											"type": "DatasetReference"
+										}
+									}
+								},
+								{
+									"name": "FUNCTIONKEY",
+									"type": "WebActivity",
+									"dependsOn": [
+										{
+											"activity": "LK_GET_KAFKA_CONFIG1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {
+											"content-type": "application/json"
+										},
+										"url": {
+											"value": "@concat(\n    pipeline().parameters.p_function_base_url,\n    '?code=',\n    pipeline().parameters.p_function_key\n)",
+											"type": "Expression"
+										},
+										"body": {
+											"container": "@{pipeline().parameters.p_container}",
+											"folder": "@{pipeline().parameters.p_folder}",
+											"fileName": "@{item().name}",
+											"topic": "@{replace(item().name,'.csv','_topic')}"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"p_container": {
+						"type": "string",
+						"defaultValue": "raw"
+					},
+					"p_folder": {
+						"type": "string",
+						"defaultValue": "DATABASE_A"
+					},
+					"p_function_base_url": {
+						"type": "string",
+						"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net/api/myconn"
+					},
+					"p_function_key": {
+						"type": "string",
+						"defaultValue": "p1"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/KAFKA_RAW_FOLDER')]",
+				"[concat(variables('factoryId'), '/datasets/DS_SQL_CONFIG')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KAFKA_RAW_FOLDER')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('KAFKA_LS_ADLS_RAW')]",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_container": {
+						"type": "string",
+						"defaultValue": "raw"
+					},
+					"p_folder": {
+						"type": "string",
+						"defaultValue": "DATABASE_A"
+					}
+				},
+				"folder": {
+					"name": "kafka_raw"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().p_folder",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().p_container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SQL_CONFIG')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('LS_SQL_CONFIG')]",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "kafka_raw"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "file_name",
+						"type": "varchar"
+					},
+					{
+						"name": "kafka_topic",
+						"type": "varchar"
+					},
+					{
+						"name": "active_flag",
+						"type": "char"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "kafka_file_config"
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
