@@ -1,0 +1,35 @@
+{
+	"name": "KAFKA_DS_RAW_CSV",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "KAFKA_LS_ADLS_RAW",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "kafka_raw"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "DATABASE_A",
+				"fileSystem": "raw"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "DeptID",
+				"type": "String"
+			},
+			{
+				"name": "Name",
+				"type": "String"
+			}
+		]
+	}
+}
