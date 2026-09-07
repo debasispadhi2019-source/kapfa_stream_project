@@ -1,0 +1,511 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "kafkastream09"
+		},
+		"AZ_KAFKA_FUNCTION_functionKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'functionKey' of 'AZ_KAFKA_FUNCTION'"
+		},
+		"KAFKA_DS_RAW_FOLDER_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'KAFKA_DS_RAW_FOLDER'"
+		},
+		"KAFKA_LS_ADLS_RAW_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'KAFKA_LS_ADLS_RAW'"
+		},
+		"LS_KAFKA_CONFIG_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_KAFKA_CONFIG'"
+		},
+		"LS_SQL_CONFIG_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_SQL_CONFIG'"
+		},
+		"AZ_KAFKA_FUNCTION_properties_typeProperties_functionAppUrl": {
+			"type": "string",
+			"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net"
+		},
+		"KAFKA_DS_RAW_FOLDER_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ttadlsdev06sep.dfs.core.windows.net/"
+		},
+		"KAFKA_KEY_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://KV-Demo31aug.vault.azure.net/"
+		},
+		"KAFKA_LS_ADLS_RAW_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ttadlsdev06sep.dfs.core.windows.net/"
+		},
+		"LS_KAFKA_CONFIG_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "tthcemr06sep.database.windows.net"
+		},
+		"LS_KAFKA_CONFIG_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "trendy-tech-hospital-a"
+		},
+		"LS_KAFKA_CONFIG_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		},
+		"LS_SQL_CONFIG_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "tthcemr06sep.database.windows.net"
+		},
+		"LS_SQL_CONFIG_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "trendy-tech-hospital-a"
+		},
+		"LS_SQL_CONFIG_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_ADLS_TO_KAFKA')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "KAFKA_GM_SRC",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "KAFKA_RAW_FOLDER",
+								"type": "DatasetReference",
+								"parameters": {
+									"p_container": "raw",
+									"p_folder": "DATABASE_A"
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "KAFKA_FE_FILES",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "KAFKA_GM_SRC",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('KAFKA_GM_SRC').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "LK_GET_KAFKA_CONFIG1",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT file_name, kafka_topic\nFROM dbo.kafka_file_config\nWHERE active_flag = 'Y'\nAND file_name = '@{item().name}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"isolationLevel": "ReadCommitted",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_SQL_CONFIG",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "FUNCTIONKEY",
+									"type": "WebActivity",
+									"dependsOn": [
+										{
+											"activity": "LK_GET_KAFKA_CONFIG1",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										},
+										{
+											"activity": "get_function_key",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {
+											"content-type": "application/json"
+										},
+										"url": {
+											"value": "@concat(\n    pipeline().parameters.p_function_base_url,\n    '?code=',\n    activity('get_function_key').output.value\n)",
+											"type": "Expression"
+										},
+										"body": {
+											"container": "@{pipeline().parameters.p_container}",
+											"folder": "@{pipeline().parameters.p_folder}",
+											"fileName": "@{item().name}",
+											"topic": "@{replace(item().name,'.csv','_topic')}"
+										}
+									}
+								},
+								{
+									"name": "get_function_key",
+									"type": "WebActivity",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "GET",
+										"headers": {},
+										"url": "https://KV-Demo31aug.vault.azure.net/secrets/p1?api-version=7.5",
+										"authentication": {
+											"type": "MSI",
+											"resource": "https://vault.azure.net"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_container": {
+						"type": "string",
+						"defaultValue": "raw"
+					},
+					"p_folder": {
+						"type": "string",
+						"defaultValue": "DATABASE_A"
+					},
+					"p_function_base_url": {
+						"type": "string",
+						"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net/api/myconn"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/KAFKA_RAW_FOLDER')]",
+				"[concat(variables('factoryId'), '/datasets/DS_SQL_CONFIG')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SQL_CONFIG')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_CONFIG",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "kafka_raw"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "file_name",
+						"type": "varchar"
+					},
+					{
+						"name": "kafka_topic",
+						"type": "varchar"
+					},
+					{
+						"name": "active_flag",
+						"type": "char"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "kafka_file_config"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_CONFIG')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KAFKA_DS_RAW_CSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "KAFKA_LS_ADLS_RAW",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_container": {
+						"type": "string"
+					},
+					"p_folder": {
+						"type": "string"
+					},
+					"p_file": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "kafka_raw"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().p_file",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().p_folder",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().p_container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "DeptID",
+						"type": "String"
+					},
+					{
+						"name": "Name",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/KAFKA_LS_ADLS_RAW')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KAFKA_RAW_FOLDER')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "KAFKA_LS_ADLS_RAW",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_container": {
+						"type": "string",
+						"defaultValue": "raw"
+					},
+					"p_folder": {
+						"type": "string",
+						"defaultValue": "DATABASE_A"
+					}
+				},
+				"folder": {
+					"name": "kafka_raw"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().p_folder",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().p_container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/KAFKA_LS_ADLS_RAW')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AZ_KAFKA_FUNCTION')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureFunction",
+				"typeProperties": {
+					"functionAppUrl": "[parameters('AZ_KAFKA_FUNCTION_properties_typeProperties_functionAppUrl')]",
+					"authentication": "Anonymous",
+					"functionKey": {
+						"type": "SecureString",
+						"value": "[parameters('AZ_KAFKA_FUNCTION_functionKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KAFKA_DS_RAW_FOLDER')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('KAFKA_DS_RAW_FOLDER_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('KAFKA_DS_RAW_FOLDER_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KAFKA_KEY')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('KAFKA_KEY_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KAFKA_LS_ADLS_RAW')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('KAFKA_LS_ADLS_RAW_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('KAFKA_LS_ADLS_RAW_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_KAFKA_CONFIG')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('LS_KAFKA_CONFIG_properties_typeProperties_server')]",
+					"database": "[parameters('LS_KAFKA_CONFIG_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('LS_KAFKA_CONFIG_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('LS_KAFKA_CONFIG_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQL_CONFIG')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('LS_SQL_CONFIG_properties_typeProperties_server')]",
+					"database": "[parameters('LS_SQL_CONFIG_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('LS_SQL_CONFIG_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('LS_SQL_CONFIG_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

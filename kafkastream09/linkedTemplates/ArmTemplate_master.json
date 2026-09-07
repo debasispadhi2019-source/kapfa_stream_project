@@ -1,0 +1,147 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "kafkastream09"
+		},
+		"AZ_KAFKA_FUNCTION_functionKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'functionKey' of 'AZ_KAFKA_FUNCTION'"
+		},
+		"KAFKA_DS_RAW_FOLDER_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'KAFKA_DS_RAW_FOLDER'"
+		},
+		"KAFKA_LS_ADLS_RAW_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'KAFKA_LS_ADLS_RAW'"
+		},
+		"LS_KAFKA_CONFIG_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_KAFKA_CONFIG'"
+		},
+		"LS_SQL_CONFIG_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_SQL_CONFIG'"
+		},
+		"AZ_KAFKA_FUNCTION_properties_typeProperties_functionAppUrl": {
+			"type": "string",
+			"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net"
+		},
+		"KAFKA_DS_RAW_FOLDER_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ttadlsdev06sep.dfs.core.windows.net/"
+		},
+		"KAFKA_KEY_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://KV-Demo31aug.vault.azure.net/"
+		},
+		"KAFKA_LS_ADLS_RAW_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ttadlsdev06sep.dfs.core.windows.net/"
+		},
+		"LS_KAFKA_CONFIG_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "tthcemr06sep.database.windows.net"
+		},
+		"LS_KAFKA_CONFIG_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "trendy-tech-hospital-a"
+		},
+		"LS_KAFKA_CONFIG_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		},
+		"LS_SQL_CONFIG_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "tthcemr06sep.database.windows.net"
+		},
+		"LS_SQL_CONFIG_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "trendy-tech-hospital-a"
+		},
+		"LS_SQL_CONFIG_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "kafkastream09_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AZ_KAFKA_FUNCTION_functionKey": {
+						"value": "[parameters('AZ_KAFKA_FUNCTION_functionKey')]"
+					},
+					"KAFKA_DS_RAW_FOLDER_accountKey": {
+						"value": "[parameters('KAFKA_DS_RAW_FOLDER_accountKey')]"
+					},
+					"KAFKA_LS_ADLS_RAW_accountKey": {
+						"value": "[parameters('KAFKA_LS_ADLS_RAW_accountKey')]"
+					},
+					"LS_KAFKA_CONFIG_password": {
+						"value": "[parameters('LS_KAFKA_CONFIG_password')]"
+					},
+					"LS_SQL_CONFIG_password": {
+						"value": "[parameters('LS_SQL_CONFIG_password')]"
+					},
+					"AZ_KAFKA_FUNCTION_properties_typeProperties_functionAppUrl": {
+						"value": "[parameters('AZ_KAFKA_FUNCTION_properties_typeProperties_functionAppUrl')]"
+					},
+					"KAFKA_DS_RAW_FOLDER_properties_typeProperties_url": {
+						"value": "[parameters('KAFKA_DS_RAW_FOLDER_properties_typeProperties_url')]"
+					},
+					"KAFKA_KEY_properties_typeProperties_baseUrl": {
+						"value": "[parameters('KAFKA_KEY_properties_typeProperties_baseUrl')]"
+					},
+					"KAFKA_LS_ADLS_RAW_properties_typeProperties_url": {
+						"value": "[parameters('KAFKA_LS_ADLS_RAW_properties_typeProperties_url')]"
+					},
+					"LS_KAFKA_CONFIG_properties_typeProperties_server": {
+						"value": "[parameters('LS_KAFKA_CONFIG_properties_typeProperties_server')]"
+					},
+					"LS_KAFKA_CONFIG_properties_typeProperties_database": {
+						"value": "[parameters('LS_KAFKA_CONFIG_properties_typeProperties_database')]"
+					},
+					"LS_KAFKA_CONFIG_properties_typeProperties_userName": {
+						"value": "[parameters('LS_KAFKA_CONFIG_properties_typeProperties_userName')]"
+					},
+					"LS_SQL_CONFIG_properties_typeProperties_server": {
+						"value": "[parameters('LS_SQL_CONFIG_properties_typeProperties_server')]"
+					},
+					"LS_SQL_CONFIG_properties_typeProperties_database": {
+						"value": "[parameters('LS_SQL_CONFIG_properties_typeProperties_database')]"
+					},
+					"LS_SQL_CONFIG_properties_typeProperties_userName": {
+						"value": "[parameters('LS_SQL_CONFIG_properties_typeProperties_userName')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
