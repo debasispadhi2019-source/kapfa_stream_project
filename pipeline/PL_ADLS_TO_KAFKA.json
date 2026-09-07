@@ -100,6 +100,7 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
+								"functionName": "PublishToKafka",
 								"body": {
 									"container": "@{pipeline().parameters.p_container}",
 									"folder": "@{pipeline().parameters.p_folder}",
