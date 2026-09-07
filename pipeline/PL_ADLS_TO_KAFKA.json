@@ -52,10 +52,48 @@
 						"value": "@activity('KAFKA_GM_SRC').output.childItems",
 						"type": "Expression"
 					},
-					"isSequential": true
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Lookup1",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": "SELECT file_name, kafka_topic\nFROM dbo.kafka_file_config\nWHERE active_flag = 'Y'\nAND file_name = '@{item().name}'",
+									"queryTimeout": "02:00:00",
+									"isolationLevel": "ReadCommitted",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_SQL_CONFIG",
+									"type": "DatasetReference"
+								}
+							}
+						}
+					]
 				}
 			}
 		],
+		"parameters": {
+			"p_container": {
+				"type": "string",
+				"defaultValue": "raw"
+			},
+			"p_folder": {
+				"type": "string",
+				"defaultValue": "DATABASE_A"
+			}
+		},
 		"annotations": []
 	}
 }

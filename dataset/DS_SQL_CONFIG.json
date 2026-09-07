@@ -5,6 +5,9 @@
 			"referenceName": "LS_SQL_CONFIG",
 			"type": "LinkedServiceReference"
 		},
+		"folder": {
+			"name": "kafka_raw"
+		},
 		"annotations": [],
 		"type": "AzureSqlTable",
 		"schema": [
