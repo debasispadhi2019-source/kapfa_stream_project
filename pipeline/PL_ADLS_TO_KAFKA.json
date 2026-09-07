@@ -81,8 +81,8 @@
 							}
 						},
 						{
-							"name": "WA_PUBLISH_TO_KAFKA",
-							"type": "WebActivity",
+							"name": "Azure Function1",
+							"type": "AzureFunctionActivity",
 							"dependsOn": [
 								{
 									"activity": "LK_GET_KAFKA_CONFIG1",
@@ -100,17 +100,20 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"method": "POST",
-								"headers": {
-									"content-type": "application/json"
-								},
-								"url": "@concat(   'https://publishtokafka-xxxx.centralindia-01.azurewebsites.net/api/PublishToKafka?code=',   activity('GetFunctionKey').output.value )",
 								"body": {
 									"container": "@{pipeline().parameters.p_container}",
 									"folder": "@{pipeline().parameters.p_folder}",
 									"fileName": "@{item().name}",
 									"topic": "@{activity('LK_GET_KAFKA_CONFIG').output.firstRow.kafka_topic}"
-								}
+								},
+								"headers": {
+									"content-type": "application/json"
+								},
+								"method": "POST"
+							},
+							"linkedServiceName": {
+								"referenceName": "AZ_KAFKA_FUNCTION",
+								"type": "LinkedServiceReference"
 							}
 						}
 					]
