@@ -158,10 +158,6 @@
 			"p_function_base_url": {
 				"type": "string",
 				"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net/api/myconn"
-			},
-			"p_function_key": {
-				"type": "string",
-				"defaultValue": "p1"
 			}
 		},
 		"annotations": []
