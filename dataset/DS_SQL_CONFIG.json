@@ -1,0 +1,29 @@
+{
+	"name": "DS_SQL_CONFIG",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_CONFIG",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "file_name",
+				"type": "varchar"
+			},
+			{
+				"name": "kafka_topic",
+				"type": "varchar"
+			},
+			{
+				"name": "active_flag",
+				"type": "char"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "kafka_file_config"
+		}
+	}
+}
