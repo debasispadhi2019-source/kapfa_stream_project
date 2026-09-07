@@ -1,0 +1,15 @@
+{
+	"name": "kafkastream09",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "db9b6823-86ac-4ace-972f-99b5011e2a75",
+		"tenantId": "b8a6bae8-ac1d-4374-9247-2912060cd297"
+	}
+}
