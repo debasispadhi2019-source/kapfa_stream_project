@@ -55,7 +55,7 @@
 					"isSequential": true,
 					"activities": [
 						{
-							"name": "Lookup1",
+							"name": "LK_GET_KAFKA_CONFIG1",
 							"type": "Lookup",
 							"dependsOn": [],
 							"policy": {
@@ -77,6 +77,39 @@
 								"dataset": {
 									"referenceName": "DS_SQL_CONFIG",
 									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "WA_PUBLISH_TO_KAFKA",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "LK_GET_KAFKA_CONFIG1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"headers": {
+									"content-type": "application/json"
+								},
+								"url": "@concat(   'https://publishtokafka-xxxx.centralindia-01.azurewebsites.net/api/PublishToKafka?code=',   activity('GetFunctionKey').output.value )",
+								"body": {
+									"container": "@{pipeline().parameters.p_container}",
+									"folder": "@{pipeline().parameters.p_folder}",
+									"fileName": "@{item().name}",
+									"topic": "@{activity('LK_GET_KAFKA_CONFIG').output.firstRow.kafka_topic}"
 								}
 							}
 						}
