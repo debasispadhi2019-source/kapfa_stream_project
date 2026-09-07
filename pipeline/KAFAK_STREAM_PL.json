@@ -19,8 +19,14 @@
 						"referenceName": "KAFKA_RAW_FOLDER",
 						"type": "DatasetReference",
 						"parameters": {
-							"p_container": "raw",
-							"p_folder": "DATABASE_A"
+							"p_container": {
+								"value": "@pipeline().parameters.p_container",
+								"type": "Expression"
+							},
+							"p_folder": {
+								"value": "@pipeline().parameters.p_folder",
+								"type": "Expression"
+							}
 						}
 					},
 					"fieldList": [
@@ -78,11 +84,58 @@
 									"type": "DatasetReference"
 								}
 							}
+						},
+						{
+							"name": "Web1",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "LK_GET_KAFKA_CONFIG",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"headers": {
+									"undefined": "Name: Content-Type\nValue: application/json"
+								},
+								"url": "@pipeline().parameters.p_function_url",
+								"body": {
+									"container": "@{pipeline().parameters.p_container}",
+									"folder": "@{pipeline().parameters.p_folder}",
+									"fileName": "@{item().name}",
+									"topic": "@{activity('LK_GET_KAFKA_CONFIG').output.firstRow.kafka_topic}"
+								}
+							}
 						}
 					]
 				}
 			}
 		],
+		"parameters": {
+			"p_function_url": {
+				"type": "string",
+				"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net/api/PublishToKafka?code=Z22PQRm11TA7a5LfZtcMl4CYDNZGNrOZy6ujE8TiId98AzFuDuaQMA="
+			},
+			"p_container": {
+				"type": "string",
+				"defaultValue": "raw"
+			},
+			"p_folder": {
+				"type": "string",
+				"defaultValue": "DATABASE_A"
+			}
+		},
 		"annotations": []
 	}
 }
