@@ -69,7 +69,10 @@
 							"typeProperties": {
 								"source": {
 									"type": "AzureSqlSource",
-									"sqlReaderQuery": "SELECT file_name, kafka_topic\nFROM dbo.kafka_file_config\nWHERE active_flag = 'Y'\nAND file_name = '@{item().name}'",
+									"sqlReaderQuery": {
+										"value": "SELECT file_name, kafka_topic\nFROM dbo.kafka_file_config\nWHERE active_flag = 'Y'\nAND file_name = '@{item().name}'",
+										"type": "Expression"
+									},
 									"queryTimeout": "02:00:00",
 									"isolationLevel": "ReadCommitted",
 									"partitionOption": "None"
@@ -81,8 +84,8 @@
 							}
 						},
 						{
-							"name": "Azure Function1",
-							"type": "AzureFunctionActivity",
+							"name": "FUNCTIONKEY",
+							"type": "WebActivity",
 							"dependsOn": [
 								{
 									"activity": "LK_GET_KAFKA_CONFIG1",
@@ -100,21 +103,20 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"functionName": "PublishToKafka",
+								"method": "POST",
+								"headers": {
+									"content-type": "application/json"
+								},
+								"url": {
+									"value": "@concat(\n    pipeline().parameters.p_function_base_url,\n    '?code=',\n    pipeline().parameters.p_function_key\n)",
+									"type": "Expression"
+								},
 								"body": {
 									"container": "@{pipeline().parameters.p_container}",
 									"folder": "@{pipeline().parameters.p_folder}",
 									"fileName": "@{item().name}",
-									"topic": "@{activity('LK_GET_KAFKA_CONFIG').output.firstRow.kafka_topic}"
-								},
-								"headers": {
-									"content-type": "application/json"
-								},
-								"method": "POST"
-							},
-							"linkedServiceName": {
-								"referenceName": "AZ_KAFKA_FUNCTION",
-								"type": "LinkedServiceReference"
+									"topic": "@{replace(item().name,'.csv','_topic')}"
+								}
 							}
 						}
 					]
@@ -129,6 +131,14 @@
 			"p_folder": {
 				"type": "string",
 				"defaultValue": "DATABASE_A"
+			},
+			"p_function_base_url": {
+				"type": "string",
+				"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net/api/myconn"
+			},
+			"p_function_key": {
+				"type": "string",
+				"defaultValue": "p1"
 			}
 		},
 		"annotations": []
