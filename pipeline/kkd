@@ -1,1 +1,171 @@
 
+{
+	"name": "PL_ADLS_TO_KAFKA",
+	"properties": {
+		"activities": [
+			{
+				"name": "KAFKA_GM_SRC",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "KAFKA_RAW_FOLDER",
+						"type": "DatasetReference",
+						"parameters": {
+							"p_container": "raw",
+							"p_folder": "DATABASE_A"
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "KAFKA_FE_FILES",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "KAFKA_GM_SRC",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('KAFKA_GM_SRC').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "LK_GET_KAFKA_CONFIG1",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT file_name, kafka_topic\nFROM dbo.kafka_file_config\nWHERE active_flag = 'Y'\nAND file_name = '@{item().name}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"isolationLevel": "ReadCommitted",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_SQL_CONFIG",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "FUNCTIONKEY",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "LK_GET_KAFKA_CONFIG1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "get_function_key",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"headers": {
+									"content-type": "application/json"
+								},
+								"url": {
+									"value": "@concat(\n    pipeline().parameters.p_function_base_url,\n    '?code=',\n    activity('get_function_key').output.value\n)",
+									"type": "Expression"
+								},
+								"body": {
+									"container": "@{pipeline().parameters.p_container}",
+									"folder": "@{pipeline().parameters.p_folder}",
+									"fileName": "@{item().name}",
+									"topic": "@{replace(item().name,'.csv','_topic')}"
+								}
+							}
+						},
+						{
+							"name": "get_function_key",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "GET",
+								"url": "https://KV-Demo31aug.vault.azure.net/secrets/p1?api-version=7.5",
+								"authentication": {
+									"type": "MSI",
+									"resource": "https://vault.azure.net"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"p_container": {
+				"type": "string",
+				"defaultValue": "raw"
+			},
+			"p_folder": {
+				"type": "string",
+				"defaultValue": "DATABASE_A"
+			},
+			"p_function_base_url": {
+				"type": "string",
+				"defaultValue": "https://publishtokafka-byfjhghhgkaacxdb.centralindia-01.azurewebsites.net/api/myconn"
+			}
+		},
+		"annotations": []
+	}
+}
